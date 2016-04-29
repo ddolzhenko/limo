@@ -49,8 +49,15 @@ namespace limo
 
     template <class TFunc> scoped_type<TFunc> scoped(TFunc f)
     {
-        return scoped_type(TFunc);
+        return scoped_type(f);
     }
+
+    template <class T, TAfter> scoped_type<TFunc> scoped(T obj, TFunc after)
+    {
+        auto f = [obj]() { after(obj); }
+        return scoped_type(f);
+    }
+
 
 
     //------------------------------------------------------------------------------
@@ -136,10 +143,10 @@ namespace limo
         scoped(compose(timer(), print));
 
         // this will calculate calls and total time of this function
-        scoped(profiler(__func__));
+        auto scope = scoped(profiler(__func__));
 
         // this will print finished func name after function is finished
-        scoped([](){ cout << 'finished: ' << __func__ << endl; });
+        auto finisher = scoped([](){ cout << 'finished: ' << __func__ << endl; });
 
 
         auto wrapper = [](auto what){ 
@@ -148,8 +155,12 @@ namespace limo
         }
 
         // this will print start function now and after finis will print fincished function
-        scoped(wrapper);
+        auto burger = scoped(wrapper);
 
+
+        auto x = new int[1234];
+        auto scope = scoped(x = new int[1234], [](int* x){ delete [] x; });
+        auto scope = scoped(x = std::malloc(1024), std::free);
         /// your code code
         /// ...
     }
