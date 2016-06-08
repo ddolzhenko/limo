@@ -83,15 +83,39 @@ namespace limo {
         const bool ok;
     };
 
-    std::ostream& operator<<(std::ostream& o, const Run& run)
+    struct Statistics
     {
-        const char tab[] = "    ";
-        return o    << run.file << ":" << run.line << ":: " 
-                    << (run.ok ? "ok" : "failed") << ": "
-                    << tab << run.expected << std::endl;
-                    // << tab << run.recieved << std::endl;
+        size_t total, passed, failured, crashed;
+        void reset() { total = passed = failured = crashed = 0; }
+
+        bool is_valid() const { return total == passed + failured + crashed; }
+
+        Statistics& operator+=(const Statistics& rhs)
+        {
+            total       += rhs.total;
+            passed      += rhs.passed;
+            failured    += rhs.failured;
+            crashed     += rhs.crashed;
+            return *this;
+        };
     };
 
+    std::ostream& operator<<(std::ostream& o, const Run& run)
+    {
+        return o    << run.file << ":" << run.line << ":: " 
+                    << (run.ok ? "ok" : "failed") << ":    "
+                    << run.expected << std::endl;
+    };
+
+    std::ostream& operator<<(std::ostream& o, const Statistics& stats)
+    {
+        return o    << " crashed " << stats.crashed
+                    << ", failured " << stats.failured
+                    << ", passed " << stats.passed
+                    << ", total " << stats.total
+                    << ".";
+        assert(stats.is_valid());
+    };
 
     class TestContext
     {
@@ -106,11 +130,15 @@ namespace limo {
 
         bool m_global;
 
+        Statistics stats;
+
     public:
         TestContext(Name name, bool global=false)
         : m_name(name)
         , m_global(global)
         {
+            stats.reset();
+
             m_before = [](){};
             m_after  = [](){};
 
@@ -123,6 +151,8 @@ namespace limo {
             {
                 run_test(test.first, test.second, basename);
             }
+
+            std::cout << stats << std::endl;
         }
 
         void add(Name name, TestFunction test)
@@ -138,28 +168,38 @@ namespace limo {
 
         void run_test(Name name, TestFunction test, Name basename)
         {
+
             m_before();
             
             TestContext context(basename + name);
             test(context);
             // results[fullname] = info;
             m_after();
-            
-            // context.run(context.m_name + ".");
+
+            stats += context.stats;            
         }
 
     public: // outcomes
         void expect_true(const char* file, int line, const char* expected, bool ok)
         {
+            stats.total++;
+
             Run run = {expected, ok ? "true" : "false", file, line, ok};
             // db.push_back(run);
-            if(!ok) std::cout << run;
+            if(ok)
+            {
+                stats.passed++;
+            }
+            else
+            {
+                stats.failured++;
+                std::cout << run;
+            }
         }
 
     private:
        
     };
-
 
 
     struct Registrator
@@ -168,7 +208,6 @@ namespace limo {
             w.m_context->add(w.m_name, w.m_test);
         }
     };
-
 
 
 

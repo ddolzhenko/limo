@@ -40,10 +40,14 @@ SOFTWARE.
 // + __file__ ___line__
 // + setup/teardown  anyway
 // - print calculated values (if possible)
-// - statistics
+// + statistics
 // - context:     CONTEXT(sort, {selection_sort, naive_sort})
 // - select tests to run test_context__.run("search.*")
 // - separate printers and config
+
+// 0.3
+// - base test example
+// - test example with 2 algoritms
 
 // 0.5: 
 // - separate process for each test
