@@ -60,7 +60,7 @@ int my_sqare(int x)
 
 LTEST(my_sqare) {
 
-    using namespace ltest;
+    using namespace limo;
 
     EXPECT_TRUE(2==2);
     EXPECT_FALSE(2==3);
