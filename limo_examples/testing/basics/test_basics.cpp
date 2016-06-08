@@ -44,6 +44,7 @@ SOFTWARE.
 // - context:     CONTEXT(sort, {selection_sort, naive_sort})
 // - select tests to run test_context__.run("search.*")
 // - separate printers and config
+// - assert marcroses
 
 // 0.3
 // - base test example
