@@ -40,14 +40,13 @@ namespace limo
 {
 
     
-
 } // namespace limo
 
 //------------------------------------------------------------------------------
 
 int main()
 {
-    ltest_context__.run();
+    get_ltest_context()->run();
     return 0;
 }
 

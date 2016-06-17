@@ -51,14 +51,17 @@ SOFTWARE.
 
 namespace limo {
 
+
     class TestContext;
     
 
     typedef std::string Name;
-    typedef std::function<void (TestContext&)>    TestFunction;
-    typedef std::function<void(void)>             PrepareFunction;
-    typedef std::map<Name, TestFunction> Tests;
+    typedef std::function<TestContext*(void)>           TestContextGetter;
+    typedef std::function<void (TestContextGetter&)>    TestFunction;
+    typedef std::function<void(void)>                   PrepareFunction;
+    typedef std::map<Name, TestFunction>                Tests;
 
+    
     struct TestSettings
     {
         TestSettings(Name name, TestContext* suite): m_name(name), m_context(suite) {}
@@ -100,14 +103,14 @@ namespace limo {
         };
     };
 
-    std::ostream& operator<<(std::ostream& o, const Run& run)
+    inline std::ostream& operator<<(std::ostream& o, const Run& run)
     {
         return o    << run.file << ":" << run.line << ":: " 
                     << (run.ok ? "ok" : "failed") << ":    "
                     << run.expected << std::endl;
     };
 
-    std::ostream& operator<<(std::ostream& o, const Statistics& stats)
+    inline std::ostream& operator<<(std::ostream& o, const Statistics& stats)
     {
         return o    << " crashed " << stats.crashed
                     << ", failured " << stats.failured
@@ -172,7 +175,8 @@ namespace limo {
             m_before();
             
             TestContext context(basename + name);
-            test(context);
+            TestContextGetter getter = [&context]() { return &context; };
+            test(getter);
             // results[fullname] = info;
             m_after();
 
@@ -202,8 +206,7 @@ namespace limo {
     };
 
 
-    struct Registrator
-    {
+    struct Registrator {
         Registrator(const TestSettings& w) {
             w.m_context->add(w.m_name, w.m_test);
         }
@@ -213,8 +216,8 @@ namespace limo {
 
     #define LTEST(test_name) \
         limo::Registrator ltest_ ## test_name = \
-            limo::TestSettings(#test_name,  &ltest_context__) << \
-            [&](limo::TestContext& ltest_context__)
+            limo::TestSettings(#test_name,  get_ltest_context()) << \
+            [&](limo::TestContextGetter& get_ltest_context)
 
 
     #define LBEFORE limo_context__.m_before = [&]()
@@ -222,7 +225,7 @@ namespace limo {
 
 
     // Unary
-    #define EXPECT_TRUE(expr)       ltest_context__.expect_true(__FILE__, __LINE__, #expr, expr)
+    #define EXPECT_TRUE(expr)       get_ltest_context()->expect_true(__FILE__, __LINE__, #expr, expr)
     #define EXPECT_FALSE(expr)      EXPECT_TRUE(!(expr))
 
     // Binary
@@ -246,6 +249,9 @@ namespace limo {
 //------------------------------------------------------------------------------
 // globals
 
-extern limo::TestContext ltest_context__("root", true);
+inline limo::TestContext* get_ltest_context() {
+    static limo::TestContext context("root", true);
+    return &context;
+}
 
 //------------------------------------------------------------------------------
