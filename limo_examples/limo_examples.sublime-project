@@ -29,18 +29,23 @@
 
                 {
                     "name": "Build && Run",
-                    "working_dir": ".",
-                    "cmd": ["g++",
-                                "-g",
-                                // "-Wall",
-                                "-std=c++0x", 
-                                "-I$project_path/..", 
-                                "-o", "$file_base_name.exe", 
-                                "$file_name", 
-                            "&&", "$file_base_name.exe"],
+                    "working_dir": "$file_path",
+                    "cmd": [
+                        "vcvars64.bat",
+                        "&&",
+                        
+                        "clang++",
+                        // "-Wall", 
+                        "-I$project_path/..",   
+                        "-O3", // "-Ofast",
+                        "-std=c++14", 
+                        "-fms-compatibility-version=19.00",
+                        "-o", "$file_base_name.exe", 
+                        "$file_name",
+
+                        "&&", "$file_base_name.exe"],
                     "shell": true,
                     "file_regex": "^(..*):([0-9]+):([0-9]*): (error|failed|warning).*",
-                    
                 },
             ]
         }

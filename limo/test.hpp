@@ -214,11 +214,12 @@ namespace limo {
 
 
 
-    #define LTEST(test_name) \
+    #define LTEST(test_name, ...) \
         limo::Registrator ltest_ ## test_name = \
             limo::TestSettings(#test_name,  get_ltest_context()) << \
-            [&](limo::TestContextGetter& get_ltest_context)
+            [__VA_ARGS__](limo::TestContextGetter& get_ltest_context) mutable -> void
 
+    
 
     #define LBEFORE limo_context__.m_before = [&]()
     #define LAFTER  limo_context__.m_after  = [&]()
