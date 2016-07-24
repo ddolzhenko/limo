@@ -47,6 +47,18 @@
                     "shell": true,
                     "file_regex": "^(..*):([0-9]+):([0-9]*): (error|failed|warning).*",
                 },
+
+                {
+                    "name": "Build && Run for Mac",
+                    "working_dir": "$file_path",
+                    "cmd": [
+                                                
+                        "clang++ -I$project_path/.. -O3 -std=c++14 -o $file_base_name.exe $file_name && ./$file_base_name.exe"
+                    ],
+                    "shell": true,
+                    "file_regex": "^(..*):([0-9]+):([0-9]*): (error|failed|warning).*",
+                },
+
             ]
         }
     ],
