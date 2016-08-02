@@ -28,7 +28,7 @@
                 },  
 
                 {
-                    "name": "Build && Run",
+                    "name": "Build && Run current file",
                     "working_dir": "$file_path",
                     "cmd": [
                         "vcvars64.bat",
@@ -37,7 +37,7 @@
                         "clang++",
                         // "-Wall", 
                         "-I$project_path/..",   
-                        "-O3", // "-Ofast",
+                        "-O0", // "-Ofast",
                         "-std=c++14", 
                         "-fms-compatibility-version=19.00",
                         "-o", "$file_base_name.exe", 
@@ -46,6 +46,29 @@
                         "&&", "$file_base_name.exe"],
                     "shell": true,
                     "file_regex": "^(..*):([0-9]+):([0-9]*): (error|failed|warning).*",
+                },
+
+                {
+                    "name": "Build && Run test examples",
+                    "working_dir": "$project_path/testing/basics",
+                    "cmd": [
+                        "vcvars64.bat",
+                        "&&",
+                        
+                        "clang++",
+                        // "-Wall", 
+                        "-I$project_path/..",   
+                        "-O0", // "-Ofast",
+                        "-std=c++14", 
+                        "-fms-compatibility-version=19.00",
+                        "-o", "test_examples.exe", 
+                        "test_basics.cpp",
+
+                        "&&", "test_examples.exe"],
+                    "shell": true,
+                    "file_regex": "^(..*):([0-9]+):([0-9]*): (error|failed|warning).*",
+                    // "selector": "source.c++, source.json",
+
                 },
             ]
         }

@@ -52,8 +52,7 @@ SOFTWARE.
 // - test example with 2 algoritms
 
 // 0.5: 
-// - separate process for each test
-// - perfomance testing parameters
+ 
 
 
 int my_sqare(int x)
