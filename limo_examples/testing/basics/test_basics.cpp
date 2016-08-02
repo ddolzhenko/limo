@@ -63,9 +63,25 @@ int my_sqare(int x)
 }
 
 
-LTEST(my_sqare) {
+LTEST(lambda_mutabelnost) {
+    using namespace std;
 
-    
+    int x = 42;
+
+    auto foo = [x]() mutable {
+        x = 13;
+    };
+
+    EXPECT_EQ(x, 42);
+
+    x = 128;
+    EXPECT_EQ(x, 128);
+
+    foo();
+    EXPECT_EQ(x, 128);
+};
+
+LTEST(my_sqare) {
 
     using namespace limo;
 
@@ -73,9 +89,7 @@ LTEST(my_sqare) {
     EXPECT_FALSE(2==3);
 
     EXPECT_TRUE(2==2);
-    EXPECT_LT(2, 2);
-
-    EXPECT_TRUE(in({1, 2} , 42));
+    
     EXPECT_TRUE(in({1, 2} , 2));
 
     EXPECT_EQ(1, 1);
@@ -103,7 +117,7 @@ LTEST(my_sqare) {
 
     LTEST(odd) {
         LTEST(positive) {
-            EXPECT_EQ(9, my_sqare(3));  
+            // EXPECT_EQ(9, my_sqare(3));  
             EXPECT_EQ(25, my_sqare(5));  
         };
         LTEST(negative) {
