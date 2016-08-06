@@ -44,12 +44,10 @@ SOFTWARE.
 
 // forward declarations:
 
-// dummy warnings:
-#pragma GCC diagnostic ignored "-Wunused-variable"
-
 //------------------------------------------------------------------------------
 
-namespace limo {
+namespace limo { 
+
 
 
     class TestContext;
@@ -120,8 +118,7 @@ namespace limo {
         assert(stats.is_valid());
     };
 
-    class TestContext
-    {
+    class TestContext {
     public:
         static const bool verbose = true;
         
@@ -148,15 +145,8 @@ namespace limo {
             // if(!m_global && verbose) std::cout << m_name << std::endl;
         }
 
-        void run(Name basename="")
-        {
-            for(const auto& test : m_tests)
-            {
-                run_test(test.first, test.second, basename);
-            }
+        virtual bool run(Name basename="") { return false; }
 
-            std::cout << stats << std::endl;
-        }
 
         void add(Name name, TestFunction test)
         {
@@ -206,13 +196,37 @@ namespace limo {
     };
 
 
+    class GlobalTestContext : public TestContext {
+    public:
+        GlobalTestContext(): TestContext("root", true) {}
+
+        bool run(Name basename="")
+        {
+            for(const auto& test : m_tests)
+            {
+                run_test(test.first, test.second, basename);
+            }
+
+            std::cout << stats << std::endl;
+            return true;
+        }
+    };
+
     struct Registrator {
         Registrator(const TestSettings& w) {
             w.m_context->add(w.m_name, w.m_test);
         }
     };
 
+    struct To { template <class T> To(const T&) {} };
 
+    // #define LTEST(test_name, ...) \
+    //     To doreg##test_name = \
+    //         get_ltest_context()->add(#test_name)
+    //         limo::TestSettings(#test_name,  get_ltest_context()) << \
+    //         [__VA_ARGS__](limo::TestContextGetter& get_ltest_context) mutable -> void
+
+    
 
     #define LTEST(test_name, ...) \
         limo::Registrator ltest_ ## test_name = \
@@ -251,7 +265,7 @@ namespace limo {
 // globals
 
 inline limo::TestContext* get_ltest_context() {
-    static limo::TestContext context("root", true);
+    static limo::GlobalTestContext context;
     return &context;
 }
 
