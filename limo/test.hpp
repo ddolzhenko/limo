@@ -60,8 +60,7 @@ namespace limo {
     typedef std::map<Name, TestFunction>                Tests;
 
     
-    struct TestSettings
-    {
+    struct TestSettings {
         TestSettings(Name name, TestContext* suite): m_name(name), m_context(suite) {}
         
         TestSettings& operator<<(TestFunction test) {
@@ -75,13 +74,20 @@ namespace limo {
     };
 
 
-    struct Run
+    struct Result
     {
         const char* expected;
         const char* recieved;
         const char* file;
         const int line;
         const bool ok;
+    };
+
+    inline std::ostream& operator<<(std::ostream& o, const Result& result)
+    {
+        return o    << result.file << ":" << result.line << ":: " 
+                    << (result.ok ? "ok" : "failed") << ":    "
+                    << result.expected << std::endl;
     };
 
     struct Statistics
@@ -103,72 +109,27 @@ namespace limo {
         };
     };
 
-    inline std::ostream& operator<<(std::ostream& o, const Run& run)
-    {
-        return o    << run.file << ":" << run.line << ":: " 
-                    << (run.ok ? "ok" : "failed") << ":    "
-                    << run.expected << std::endl;
-    };
+    
 
     inline std::ostream& operator<<(std::ostream& o, const Statistics& stats)
     {
+        assert(stats.is_valid());
         return o    << " crashed " << stats.crashed
                     << ", failured " << stats.failured
                     << ", passed " << stats.passed
                     << ", total " << stats.total
                     << ".";
-        assert(stats.is_valid());
     };
 
-    class TestContext {
+    class TestContextBase {
     public:
-        static const bool verbose = true;
-        
-        PrepareFunction m_before;
-        PrepareFunction m_after;
-
-        Name  m_name;
-        Tests m_tests;
-
-        
         Statistics stats;
 
-    public:
-        TestContext(Name name)
-        : m_name(name)
-        {
-            m_before = [](){};
-            m_after  = [](){};
-
-            if(verbose) std::cout << m_name << std::endl;
-        }
-
-        virtual void test(Name name, TestFunction test)
-        {
-            run_test(name, test, m_name+".");
-        }
-
-
-        void run_test(Name name, TestFunction test, Name basename)
-        {
-
-            m_before();
-            
-            TestContext context(basename + name);
-            TestContextGetter getter = [&context]() { return &context; };
-            test(getter);
-            // results[fullname] = info;
-            m_after();
-
-            stats += context.stats;            
-        }
-
-    public: // outcomes
         void expect_true(const char* file, int line, const char* expected, bool ok)
         {
             stats.total++;
 
-            Run run = {expected, ok ? "true" : "false", file, line, ok};
+            Result result = {expected, ok ? "true" : "false", file, line, ok};
             // db.push_back(run);
             if(ok)
             {
@@ -177,9 +138,49 @@ namespace limo {
             else
             {
                 stats.failured++;
-                std::cout << run;
+                std::cout << result;
             }
         }
+    };
+
+    class TestContext : public TestContextBase {
+    public:
+        static const bool m_verbose = true;
+
+        PrepareFunction m_before;
+        PrepareFunction m_after;
+
+        Name  m_name;
+        Tests m_tests;
+
+    public:
+        TestContext(Name name)
+        : m_name(name)
+        , m_before([](){})
+        , m_after([](){})
+        {
+            if(m_verbose) std::cout << m_name << std::endl;
+        }
+
+        virtual void test(Name name, TestFunction test) 
+        {
+            run_test(name, test, m_name+".");
+        }
+
+
+        void run_test(Name name, TestFunction test, Name basename)
+        {
+            m_before();
+            
+            TestContext context(basename + name);
+            TestContextGetter getter = [&context]() { return &context; };
+            test(getter);
+            m_after();
+
+            stats += context.stats;            
+        }
+
+  
 
     private:
        
@@ -227,11 +228,8 @@ namespace limo {
             limo::TestSettings(#test_name,  get_ltest_context()) << \
             [__VA_ARGS__](limo::TestContextGetter& get_ltest_context) mutable -> void
 
-    
-
     #define LBEFORE limo_context__.m_before = [&]()
     #define LAFTER  limo_context__.m_after  = [&]()
-
 
     // Unary
     #define EXPECT_TRUE(expr)       get_ltest_context()->expect_true(__FILE__, __LINE__, #expr, expr)
