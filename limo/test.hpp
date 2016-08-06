@@ -86,6 +86,8 @@ namespace limo {
 
     struct Statistics
     {
+        Statistics() { reset(); }
+
         size_t total, passed, failured, crashed;
         void reset() { total = passed = failured = crashed = 0; }
 
@@ -135,8 +137,6 @@ namespace limo {
         TestContext(Name name)
         : m_name(name)
         {
-            stats.reset();
-
             m_before = [](){};
             m_after  = [](){};
 
