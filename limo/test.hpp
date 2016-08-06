@@ -142,20 +142,15 @@ namespace limo {
             m_before = [](){};
             m_after  = [](){};
 
-            // if(!m_global && verbose) std::cout << m_name << std::endl;
+            if(!m_global && verbose) std::cout << m_name << std::endl;
         }
 
-        virtual bool run(Name basename="") { return false; }
+        virtual bool run() { return false; }
 
 
-        void add(Name name, TestFunction test)
+        virtual void test(Name name, TestFunction test)
         {
-            m_tests[name] = test;
-
-            if(!m_global)
-            {
-                run_test(name, test, m_name+".");
-            }
+            run_test(name, test, m_name+".");
         }
 
 
@@ -200,21 +195,25 @@ namespace limo {
     public:
         GlobalTestContext(): TestContext("root", true) {}
 
-        bool run(Name basename="")
+        bool run()
         {
             for(const auto& test : m_tests)
             {
-                run_test(test.first, test.second, basename);
+                run_test(test.first, test.second, "");
             }
 
             std::cout << stats << std::endl;
             return true;
         }
+
+        virtual void test(Name name, TestFunction test) {
+            m_tests[name] = test;
+        }
     };
 
     struct Registrator {
         Registrator(const TestSettings& w) {
-            w.m_context->add(w.m_name, w.m_test);
+            w.m_context->test(w.m_name, w.m_test);
         }
     };
 
