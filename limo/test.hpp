@@ -98,6 +98,20 @@ namespace limo {
         
         bool is_valid() const { return total == passed + failured + crashed; }
 
+        void add_result(Result& result) {
+            assert(is_valid());
+
+            ++total;
+            if(result.ok) {
+                ++passed;
+            } 
+            else {
+                ++failured;
+                std::cout << result;
+            }
+            assert(is_valid());
+        }
+
         Statistics& operator+=(const Statistics& rhs) {
             total       += rhs.total;
             passed      += rhs.passed;
@@ -123,18 +137,8 @@ namespace limo {
 
         void expect_true(const char* file, int line, const char* expected, bool ok)
         {
-            stats.total++;
-
             Result result = {expected, ok ? "true" : "false", file, line, ok};
-            if(ok)
-            {
-                stats.passed++;
-            }
-            else
-            {
-                stats.failured++;
-                std::cout << result;
-            }
+            stats.add_result(result);
         }
     };
 
