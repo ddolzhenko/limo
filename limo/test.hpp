@@ -113,6 +113,7 @@ namespace limo {
         }
 
         Statistics& operator+=(const Statistics& rhs) {
+            assert(is_valid() && rhs.is_valid());
             total       += rhs.total;
             passed      += rhs.passed;
             failured    += rhs.failured;
@@ -121,12 +122,12 @@ namespace limo {
         }
 
         friend std::ostream& operator<<(std::ostream& o, const Statistics& stats) {
-        assert(stats.is_valid());
-        return o    << " crashed " << stats.crashed
-                    << ", failured " << stats.failured
-                    << ", passed " << stats.passed
-                    << ", total " << stats.total
-                    << ".";
+            assert(stats.is_valid());
+            return o    << " crashed " << stats.crashed
+                        << ", failured " << stats.failured
+                        << ", passed " << stats.passed
+                        << ", total " << stats.total
+                        << ".";
         }
     };
 
@@ -166,23 +167,14 @@ namespace limo {
             run_test(name, test, m_name+".");
         }
 
-
-        void run_test(Name name, TestFunction test, Name basename)
-        {
+        void run_test(Name name, TestFunction test, Name basename) {
             m_before();
-            
             TestContext context(basename + name);
             TestContextGetter getter = [&context]() { return &context; };
             test(getter);
+            stats += context.stats;
             m_after();
-
-            stats += context.stats;            
         }
-
-  
-
-    private:
-       
     };
 
 
