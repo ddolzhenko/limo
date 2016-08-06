@@ -81,45 +81,41 @@ namespace limo {
         const char* file;
         const int line;
         const bool ok;
+        
+        friend std::ostream& operator<<(std::ostream& o, const Result& result)
+        {
+            return o    << result.file << ":" << result.line << ":: " 
+                        << (result.ok ? "ok" : "failed") << ":    "
+                        << result.expected << std::endl;
+        };
     };
 
-    inline std::ostream& operator<<(std::ostream& o, const Result& result)
-    {
-        return o    << result.file << ":" << result.line << ":: " 
-                    << (result.ok ? "ok" : "failed") << ":    "
-                    << result.expected << std::endl;
-    };
 
-    struct Statistics
-    {
-        Statistics() { reset(); }
-
+    struct Statistics {
         size_t total, passed, failured, crashed;
-        void reset() { total = passed = failured = crashed = 0; }
 
+        Statistics(): total(0), passed(0), failured(0), crashed(0) {}
+        
         bool is_valid() const { return total == passed + failured + crashed; }
 
-        Statistics& operator+=(const Statistics& rhs)
-        {
+        Statistics& operator+=(const Statistics& rhs) {
             total       += rhs.total;
             passed      += rhs.passed;
             failured    += rhs.failured;
             crashed     += rhs.crashed;
             return *this;
-        };
-    };
+        }
 
-    
-
-    inline std::ostream& operator<<(std::ostream& o, const Statistics& stats)
-    {
+        friend std::ostream& operator<<(std::ostream& o, const Statistics& stats) {
         assert(stats.is_valid());
         return o    << " crashed " << stats.crashed
                     << ", failured " << stats.failured
                     << ", passed " << stats.passed
                     << ", total " << stats.total
                     << ".";
+        }
     };
+
 
     class TestContextBase {
     public:
@@ -130,7 +126,6 @@ namespace limo {
             stats.total++;
 
             Result result = {expected, ok ? "true" : "false", file, line, ok};
-            // db.push_back(run);
             if(ok)
             {
                 stats.passed++;
