@@ -145,9 +145,6 @@ namespace limo {
             if(!m_global && verbose) std::cout << m_name << std::endl;
         }
 
-        virtual bool run() { return false; }
-
-
         virtual void test(Name name, TestFunction test)
         {
             run_test(name, test, m_name+".");
@@ -263,7 +260,7 @@ namespace limo {
 //------------------------------------------------------------------------------
 // globals
 
-inline limo::TestContext* get_ltest_context() {
+inline limo::GlobalTestContext* get_ltest_context() {
     static limo::GlobalTestContext context;
     return &context;
 }
