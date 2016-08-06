@@ -128,21 +128,19 @@ namespace limo {
         Name  m_name;
         Tests m_tests;
 
-        bool m_global;
-
+        
         Statistics stats;
 
     public:
-        TestContext(Name name, bool global=false)
+        TestContext(Name name)
         : m_name(name)
-        , m_global(global)
         {
             stats.reset();
 
             m_before = [](){};
             m_after  = [](){};
 
-            if(!m_global && verbose) std::cout << m_name << std::endl;
+            if(verbose) std::cout << m_name << std::endl;
         }
 
         virtual void test(Name name, TestFunction test)
@@ -190,7 +188,7 @@ namespace limo {
 
     class GlobalTestContext : public TestContext {
     public:
-        GlobalTestContext(): TestContext("root", true) {}
+        GlobalTestContext(): TestContext("root") {}
 
         bool run()
         {
