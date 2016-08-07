@@ -46,8 +46,7 @@ namespace limo
 
 int main()
 {
-    get_ltest_context()->run();
-    return 0;
+    return get_ltest_context()->run();
 }
 
 //------------------------------------------------------------------------------

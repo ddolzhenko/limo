@@ -50,28 +50,16 @@ namespace limo {
 
 
 
-    class TestContext;
+    class LocalTestContext;
     
 
     typedef std::string Name;
-    typedef std::function<TestContext*(void)>           TestContextGetter;
+    typedef std::function<LocalTestContext*(void)>       TestContextGetter;
     typedef std::function<void (TestContextGetter&)>    TestFunction;
     typedef std::function<void(void)>                   PrepareFunction;
     typedef std::map<Name, TestFunction>                Tests;
 
-    
-    struct TestSettings {
-        TestSettings(Name name, TestContext* suite): m_name(name), m_context(suite) {}
-        
-        TestSettings& operator<<(TestFunction test) {
-            m_test = test;
-            return *this;
-        }
 
-        Name            m_name;
-        TestContext*    m_context;
-        TestFunction    m_test;
-    };
 
 
     struct Result
@@ -112,6 +100,11 @@ namespace limo {
             assert(is_valid());
         }
 
+        void expect_true(const char* file, int line, const char* expected, bool ok) {
+            Result result = {expected, ok ? "true" : "false", file, line, ok};
+            add_result(result);
+        }
+
         Statistics& operator+=(const Statistics& rhs) {
             assert(is_valid() && rhs.is_valid());
             total       += rhs.total;
@@ -132,29 +125,18 @@ namespace limo {
     };
 
 
-    class TestContextBase {
-    public:
-        Statistics stats;
-
-        void expect_true(const char* file, int line, const char* expected, bool ok)
-        {
-            Result result = {expected, ok ? "true" : "false", file, line, ok};
-            stats.add_result(result);
-        }
-    };
-
-    class TestContext : public TestContextBase {
+    class LocalTestContext {
     public:
         static const bool m_verbose = true;
 
         PrepareFunction m_before;
         PrepareFunction m_after;
 
+        Statistics stats;
         Name  m_name;
-        Tests m_tests;
 
     public:
-        TestContext(Name name)
+        LocalTestContext(Name name)
         : m_name(name)
         , m_before([](){})
         , m_after([](){})
@@ -169,7 +151,7 @@ namespace limo {
 
         void run_test(Name name, TestFunction test, Name basename) {
             m_before();
-            TestContext context(basename + name);
+            LocalTestContext context(basename + name);
             TestContextGetter getter = [&context]() { return &context; };
             test(getter);
             stats += context.stats;
@@ -178,24 +160,39 @@ namespace limo {
     };
 
 
-    class GlobalTestContext : public TestContext {
+    class GlobalTestContext : public LocalTestContext {
     public:
-        GlobalTestContext(): TestContext("root") {}
+        Tests m_tests;
 
-        bool run()
-        {
-            for(const auto& test : m_tests)
-            {
+        GlobalTestContext(): LocalTestContext("root") {}
+
+        void test(Name name, TestFunction test) {
+            m_tests[name] = test;
+        }
+
+        int run() {
+            for(const auto& test : m_tests) {
                 run_test(test.first, test.second, "");
             }
 
             std::cout << stats << std::endl;
-            return true;
+            return 0;
+        }
+        
+    };
+
+
+    struct TestSettings {
+        TestSettings(Name name, LocalTestContext* suite): m_name(name), m_context(suite) {}
+        
+        TestSettings& operator<<(TestFunction test) {
+            m_test = test;
+            return *this;
         }
 
-        virtual void test(Name name, TestFunction test) {
-            m_tests[name] = test;
-        }
+        Name                m_name;
+        LocalTestContext*    m_context;
+        TestFunction        m_test;
     };
 
     struct Registrator {
@@ -219,11 +216,11 @@ namespace limo {
             limo::TestSettings(#test_name,  get_ltest_context()) << \
             [__VA_ARGS__](limo::TestContextGetter& get_ltest_context) mutable -> void
 
-    #define LBEFORE limo_context__.m_before = [&]()
-    #define LAFTER  limo_context__.m_after  = [&]()
+    #define LBEFORE get_ltest_context()->m_before = [&]()
+    #define LAFTER  get_ltest_context()->m_after  = [&]()
 
     // Unary
-    #define EXPECT_TRUE(expr)       get_ltest_context()->expect_true(__FILE__, __LINE__, #expr, expr)
+    #define EXPECT_TRUE(expr)       get_ltest_context()->stats.expect_true(__FILE__, __LINE__, #expr, expr)
     #define EXPECT_FALSE(expr)      EXPECT_TRUE(!(expr))
 
     // Binary
