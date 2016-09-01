@@ -33,6 +33,37 @@ SOFTWARE.
 
 // forward declarations:
 
+// limo plan
+
+// - ltest
+// - str + strlib
+// - cc
+// - cc and regex iterators
+// - stream adaptors
+
+// - ranges
+// - range.algo().algo()
+// - range concepts
+
+// - algorithms
+
+// - scopeds
+
+// - functional programming support
+
+// - ds
+// - ds.flat_map
+
+// - advanced ds:
+// - cache + strategies
+// - trie
+
+// - multithreading:
+// - universal deamon
+
+
+
+
 
 //------------------------------------------------------------------------------
 
@@ -53,6 +84,7 @@ SOFTWARE.
 
 // 0.5: 
  
+
 
 
 int my_sqare(int x)
