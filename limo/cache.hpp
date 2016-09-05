@@ -28,9 +28,11 @@ SOFTWARE.
 
 // include local:
 #include <limo/cache/LRU.hpp>
+#include <limo/assert.hpp>
 
 // include std:
-#include <limo/assert>
+#include <functional>
+#include <unordered_map>
 
 // forward declarations:
 
@@ -106,16 +108,16 @@ public: // state
 
 public: // main interface
 
-    const cached_type& operator[](const key_type& key) 
+    cached_type& operator[](const key_type& key) 
     {
         limo_scope_invariant(is_valid());
 
-        cache_map::iterator x = m_cache.find(key);
+        typename cache_map::iterator x = m_cache.find(key);
         bool cache_hit = x != m_cache.end();
-        if (hit)
+        if (cache_hit)
         {
             ++m_stat.hits;
-            x->second.info = m_strategy.promote(x->second.info);
+            x->second.second = m_strategy.promote(x->second.second);
         }
         else 
         {
@@ -133,22 +135,28 @@ public: // main interface
             x = result.first;
         }
 
-        return x->second.value;
+        return x->second.first;
     }
 
 private: // implementation details
+
+    bool is_valid() const
+    {
+        return true;
+    }
+
 
     friend std::ostream& operator<<(std::ostream& o, const self_type& cache) 
     {
         o   <<  "cache capacity=" << cache.capacity() 
             << ", size=" << cache.size() << std::endl
-            "\telements: [";
+            << "\telements: [";
         for(const auto& x : cache.m_cache)
         {
             o << "(" << x.first << "," << x.second.value << "), ";
         }
         
-        o   << std::endl << "\tstrategy: " << cache.m_order << endl;
+        o   << std::endl << "\tstrategy: " << cache.m_order;
         return o;
     }
 
