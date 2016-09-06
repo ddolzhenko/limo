@@ -38,8 +38,12 @@ SOFTWARE.
 //------------------------------------------------------------------------------
 // MACRO
 
-#define limo_assert(cond, ...)  \
-    limo::details::asserter(cond, #cond, "assertion", __VA_ARGS__, __FILE__, __LINE__)
+#if !defined(LIMO_DEBUG)
+    #define limo_assert(...)    (void)(0)
+#else
+    #define limo_assert(cond, ...)  \
+        limo::details::asserter(cond, #cond, "assertion", __VA_ARGS__, __FILE__, __LINE__)
+#endif
 
 #define limo_contract(cond, ...)    limo_assert(cond, __VA_ARGS__)
 
