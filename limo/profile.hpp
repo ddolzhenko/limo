@@ -40,15 +40,12 @@ SOFTWARE.
 #include <sstream>
 
 // forward declarations:
-                using namespace std;
 
 //------------------------------------------------------------------------------
 // #define limo_profile_scope(id)  (void)(0)
 
 #define limo_profile_scope(id)  \
-    std::cout << "<macro checkpoint: " << id << " addr: " << (void*)(id) << std::endl; \
-    static const char* limo_scope_profile_id = id; \
-    static limo::profile::details::Info* limo_scope_profile_info = limo::profile::details::new_info(limo_scope_profile_id); \
+    static limo::profile::details::Info& limo_scope_profile_info = limo::profile::details::new_info(id); \
     limo::profile::details::InfoUpdater limo_scope_profile_updater(limo_scope_profile_info) 
     
 #define limo_profile_function   limo_profile_scope(__func__)
@@ -74,42 +71,28 @@ namespace limo
 
                 bool operator<(const Info& other) const 
                 { 
-                    return total_time < other.total_time; 
+                    return total_time > other.total_time; 
                 }
 
                 clock_type::duration average() const 
                 { 
-                    return clock_type::duration(1); 
-                    // return calls ? total_time/calls : clock_type::duration(0); 
+                    return calls ? total_time/calls : clock_type::duration(0); 
                 }
 
                 double persent_of(const clock_type::duration& time) const 
                 {
-                    using namespace std;
-                    using namespace std::chrono;
                     auto digits = 1000;
                     auto enu  = 100 * digits * total_time.count();
                     auto denom = time.count();
                     assert(denom > 0);
                     
-                    // auto ratio = double(enu / denom) / digits;
-                    return enu;
+                    auto ratio = double(enu / denom) / digits;
+                    return ratio;
                 }
 
 
                 friend std::ostream& operator<<(std::ostream& o, const Info& info)
                 {
-                    using namespace std;
-                    // uint64_t cnt = size_t(info.total_time.count());
-
-                    // std::cout << cnt << std::endl;
-
-                    ostringstream str;
-
-                    // cout << &(info) << endl;
-                    // cout << &(info) << ", " << &(info.id) << ", " << (void*)(info.id) << endl;
-                    str << info.id;
-
                     return o
                             << "{id : " << info.id 
                             << ", calls : " << info.calls
@@ -119,12 +102,6 @@ namespace limo
             };
 
             
-            class DB 
-            {
-
-            };
-
-
             typedef std::vector<Info> ProfilerDB;
             inline  ProfilerDB* get_db()
             {
@@ -136,56 +113,28 @@ namespace limo
 
             struct InfoUpdater : limo::noncopyable
             {
-                Info*       m_info;
+                Info&       m_info;
                 clock_type::time_point   m_start;
 
-                InfoUpdater(Info* info)
+                InfoUpdater(Info& info)
                 : m_info(info)
                 , m_start(clock_type::now())
-                {
-                    // cout << "+++updater created" << flush; dump();
-                }
+                {}
 
                 ~InfoUpdater()
                 {
-                    // std::cout << ">>>---updater destroy started " << flush; dump();
-                    ++(m_info->calls);
-                    m_info->total_time += clock_type::now() - m_start;
-                    // std::cout << "<<<---updater destroy finished " << flush; dump();
-                }
-
-                void dump()
-                {
-                    auto db = *get_db();
-                    cout << "\nstate: ";
-                    for(auto& i : db)
-                    {
-                        cout <<"[" << (void*)(&i) << ", ";
-                        cout << (void*)(i.id) << "], ";
-                    }
-
-                    cout << endl;
-                    auto info = m_info;
-                    cout << info << ", addr(id):" << flush;
-                    cout << &(info->id) << ", addr(str): " << flush;
-                    cout << (void*)(info->id) << endl << flush;;
-                    cout << "\t" << "info: " << (*info) << endl;
-
-                    
+                    ++(m_info.calls);
+                    m_info.total_time += clock_type::now() - m_start;
                 }
             };
 
             
 
-           
-
-            Info* new_info(const char* id)
+            Info& new_info(const char* id)
             {
-                cout << "requested info: " << id << flush;
                 ProfilerDB* db = get_db();
-                db->push_back(Info(id));
-                cout << ", object: " << db->back() << ", addr: " << (&(db->back())) <<endl;
-                return &(db->back());
+                db->emplace_back(Info(id));
+                return db->back();
             }
 
         } // namespace details
