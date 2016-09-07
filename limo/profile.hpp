@@ -34,10 +34,7 @@ SOFTWARE.
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
-#include <typeinfo>
-#include <string>
 
-#include <sstream>
 
 // forward declarations:
 
@@ -45,7 +42,7 @@ SOFTWARE.
 // #define limo_profile_scope(id)  (void)(0)
 
 #define limo_profile_scope(id)  \
-    static limo::profile::details::Info& limo_scope_profile_info = limo::profile::details::new_info(id); \
+    static limo::profile::details::Info& limo_scope_profile_info = limo::profile::details::DB::create_info(id); \
     limo::profile::details::InfoUpdater limo_scope_profile_updater(limo_scope_profile_info) 
     
 #define limo_profile_function   limo_profile_scope(__func__)
@@ -68,48 +65,83 @@ namespace limo
                 clock_type::duration   total_time;
                 
                 Info(const char* id_): id(id_), calls(0), total_time(0) {}
-
-                bool operator<(const Info& other) const 
+                
+                template <class TDuration>
+                typename TDuration::rep total() const 
                 { 
-                    return total_time > other.total_time; 
+                    return std::chrono::duration_cast<TDuration>(total_time).count();
                 }
 
-                clock_type::duration average() const 
+                template <class TDuration>
+                typename TDuration::rep average() const 
                 { 
-                    return calls ? total_time/calls : clock_type::duration(0); 
+                    limo_assert(calls > 0, "should never happen");
+                    return std::chrono::duration_cast<TDuration>(total_time/calls).count();
                 }
 
-                double persent_of(const clock_type::duration& time) const 
+                double relative(const clock_type::duration& time) const 
                 {
-                    auto digits = 1000;
-                    auto enu  = 100 * digits * total_time.count();
+                    limo_assert(time.count() > 0, "expeced nonzero time");
+
+                    auto preserve_radix = 1000;
+                    auto enu  = 100 * preserve_radix * total_time.count();
                     auto denom = time.count();
-                    assert(denom > 0);
-                    
-                    auto ratio = double(enu / denom) / digits;
-                    return ratio;
+                    return  double(enu / denom) / preserve_radix;
                 }
+            };
 
 
-                friend std::ostream& operator<<(std::ostream& o, const Info& info)
+            class DB
+            {
+            public:
+                static inline DB& instance()
                 {
-                    return o
-                            << "{id : " << info.id 
-                            << ", calls : " << info.calls
-                            << ", time : " << info.total_time.count() << "}";
+                    static DB instance;
+                    return instance;
                 }
 
+                static Info& create_info(const char* id)
+                {
+                    DB& db = instance();
+
+                    limo_assert(db.m_data.size() < m_max_objects, "too many objects to profile");
+
+                    db.m_data.emplace_back(Info(id));
+                    return db.m_data.back();
+                }
+
+                static clock_type::duration time()
+                {
+                    return clock_type::now() - instance().m_start;
+                }
+
+                static std::vector<Info> results(size_t max_lines)
+                {
+                    auto greater_time = [](const Info& x, const Info& y) { 
+                        return x.total_time > y.total_time; 
+                    };
+
+                    auto db = instance().m_data;
+                    sort(db.begin(), db.end(), greater_time);
+
+                    auto up = std::min(max_lines, db.size());
+                    db.erase(db.begin()+up, db.end());
+                    return db;
+                }
+
+            private:
+                DB()
+                : m_start(clock_type::now())
+                {
+                    m_data.reserve(m_max_objects);
+                }
+
+                static const size_t m_max_objects = 1000;
+                const clock_type::time_point m_start;
+                std::vector<Info> m_data;
             };
 
             
-            typedef std::vector<Info> ProfilerDB;
-            inline  ProfilerDB* get_db()
-            {
-                static ProfilerDB db;
-                db.reserve(1000);
-                // std::cout << "profiler db status: " << db.size() << std::endl;
-                return &db;
-            }
 
             struct InfoUpdater : limo::noncopyable
             {
@@ -130,12 +162,7 @@ namespace limo
 
             
 
-            Info& new_info(const char* id)
-            {
-                ProfilerDB* db = get_db();
-                db->emplace_back(Info(id));
-                return db->back();
-            }
+            
 
         } // namespace details
 
@@ -151,53 +178,45 @@ namespace limo
         {   
             using namespace limo::profile::details;
             using namespace std;
-            
-            clock_type::duration finish = clock_type::now() - run_time;
-            std::cout <<  std::chrono::duration_cast<std::chrono::microseconds>(finish).count() << endl;
-            
-            const size_t id_width = 20;
-            const size_t rel_width = 6;
-            const size_t time_width = 10;
-            const size_t calls_width = 10;
-            const size_t output_lines = 20;
+            using namespace std::chrono;
 
-            ProfilerDB db = (*get_db());
+            const size_t max_lines = 20;
+            auto db = DB::results(max_lines);
+            auto finish = DB::time();
+            
+            // output width
+            const size_t w_name = 20; 
+            const size_t w_rel = 6;
+            const size_t w_time = 10;
+            const size_t w_calls = 10;
 
-            std::sort(db.begin(), db.end());
-            
-            auto repr = [](const clock_type::duration& d) {
-                return std::chrono::duration_cast<std::chrono::milliseconds>(d).count();
-            };
-            
             auto br = [&](){
                 o   << left << "+-" << setfill('-')
-                    << setw(id_width)       << "-" << "-||-"
-                    << setw(rel_width)      << "-" << "-|-"
-                    << setw(time_width)     << "-" << "-|-"
-                    << setw(time_width)     << "-" << "-|-"
-                    << setw(calls_width)    << "-" << "-|\n";
+                    << setw(w_name)     << "-" << "-||-"
+                    << setw(w_rel)      << "-" << "-|-"
+                    << setw(w_time)     << "-" << "-|-"
+                    << setw(w_time)     << "-" << "-|-"
+                    << setw(w_calls)    << "-" << "-|\n";
             };
             size_t line = 0;
             br();
             o   << setfill(' ') << left << "| "
-                << setw(id_width)       << "function"   << " || "
-                << setw(rel_width)      <<  "% time"    << " | "
-                << setw(time_width)     <<  "time msec"      << " | "
-                << setw(time_width)     <<  "average"   << " | "
-                << setw(calls_width)    <<  "calls"     << " |\n";
+                << setw(w_name)       << "function"   << " || "
+                << setw(w_rel)      <<  "% time"    << " | "
+                << setw(w_time)     <<  "time msec"      << " | "
+                << setw(w_time)     <<  "average"   << " | "
+                << setw(w_calls)    <<  "calls"     << " |\n";
             br();
             for(const auto& info : db)
             {
                 o   << setfill(' ') << "| "
-                    << left << setw(id_width)   << info.id << " || "
-                    << right << setw(rel_width) << fixed << setprecision(2) << info.persent_of(finish) <<" | "
-                    << right << setw(time_width) << repr(info.total_time) << " | "
-                    << right << setw(time_width) << repr(info.average())  << " | "
-                    << right << setw(calls_width) << info.calls  << " |\n";
+                    << left << setw(w_name)   << info.id << " || "
+                    << right << setw(w_rel) << fixed << setprecision(2) 
+                        << info.relative(finish) << " | "
+                    << right << setw(w_time) << info.total<milliseconds>() << " | "
+                    << right << setw(w_time) << info.average<milliseconds>()  << " | "
+                    << right << setw(w_calls) << info.calls  << " |\n";
                 br();
-                if(line++ > output_lines)
-                    break;
-            
             }
             return o;
         }
