@@ -194,17 +194,17 @@ namespace limo
             const size_t w_calls = 10;
 
             auto br = [&](){
-                o   << left << "+-" << setfill('-')
-                    << setw(w_name)     << "-" << "-||-"
-                    << setw(w_rel)      << "-" << "-|-"
-                    << setw(w_time)     << "-" << "-|-"
-                    << setw(w_time)     << "-" << "-|-"
-                    << setw(w_calls)    << "-" << "-|\n";
+                o   << left << ".-" << setfill('-')
+                    << setw(w_name)     << "-" << "-.-"
+                    << setw(w_rel)      << "-" << "-.-"
+                    << setw(w_time)     << "-" << "-.-"
+                    << setw(w_time)     << "-" << "-.-"
+                    << setw(w_calls)    << "-" << "-.\n";
             };
             size_t line = 0;
             br();
             o   << setfill(' ') << left << "| "
-                << setw(w_name)       << "function"   << " || "
+                << setw(w_name)       << "function"   << " | "
                 << setw(w_rel)      <<  "% time"    << " | "
                 << setw(w_time)     <<  "time msec"      << " | "
                 << setw(w_time)     <<  "average"   << " | "
@@ -213,7 +213,7 @@ namespace limo
             for(const auto& info : db)
             {
                 o   << setfill(' ') << "| "
-                    << left << setw(w_name)   << info.id << " || "
+                    << left << setw(w_name)   << info.id << " | "
                     << right << setw(w_rel) << fixed << setprecision(2) 
                         << info.relative(finish) << " | "
                     << right << setw(w_time) << info.total<milliseconds>() << " | "
