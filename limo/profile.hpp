@@ -169,13 +169,6 @@ namespace limo
 
         } // namespace details
 
-        inline clock_type::time_point start()
-        {
-            static clock_type::time_point start = clock_type::now();
-            return start;
-        }
-
-        clock_type::time_point run_time = clock_type::now();
 
         std::ostream& results(std::ostream& o)
         {   
