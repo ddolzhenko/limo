@@ -41,10 +41,12 @@ SOFTWARE.
 //------------------------------------------------------------------------------
 // #define limo_profile_scope(id)  (void)(0)
 
-#define limo_profile_scope(id)  \
-    static limo::profile::details::Info& limo_scope_profile_info = limo::profile::details::DB::create_info(id); \
-    limo::profile::details::InfoUpdater limo_scope_profile_updater(limo_scope_profile_info) 
-    
+#ifndef limo_profile_scope
+    #define limo_profile_scope(id)  \
+        static limo::profile::details::Info& limo_scope_profile_info = limo::profile::details::DB::create_info(id); \
+        limo::profile::details::InfoUpdater limo_scope_profile_updater(limo_scope_profile_info) 
+#endif    
+
 #define limo_profile_function   limo_profile_scope(__func__)
 
 
@@ -151,7 +153,8 @@ namespace limo
                 InfoUpdater(Info& info)
                 : m_info(info)
                 , m_start(clock_type::now())
-                {}
+                {
+                }
 
                 ~InfoUpdater()
                 {
