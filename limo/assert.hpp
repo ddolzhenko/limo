@@ -38,22 +38,20 @@ SOFTWARE.
 //------------------------------------------------------------------------------
 // MACRO
 
-#if !defined(LIMO_DEBUG)
+#if !defined(LIMO_FORCE_ASSERTIONS) && defined(NDEBUG)
     #define limo_assert(...)    (void)(0)
 #else
-    #define limo_assert(cond, ...)  \
+    #define limo_assert(cond, ...) \
         limo::details::asserter(cond, #cond, "assertion", __VA_ARGS__, __FILE__, __LINE__)
 #endif
 
 #define limo_contract(cond, ...)    limo_assert(cond, __VA_ARGS__)
-
 #define limo_scope_invariant(cond) limo_assert(cond, "scope invariant")
 
 //------------------------------------------------------------------------------
 
 namespace limo
 {
-
     namespace details 
     {
         void asserter(

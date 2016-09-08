@@ -39,16 +39,16 @@ SOFTWARE.
 // forward declarations:
 
 //------------------------------------------------------------------------------
-// #define limo_profile_scope(id)  (void)(0)
 
-#ifndef limo_profile_scope
+#if defined(LIMO_DISABLE_PROFILER)
+    #define limo_profile_scope(id)  (void)(0)
+#else
     #define limo_profile_scope(id)  \
         static limo::profile::details::Info& limo_scope_profile_info = limo::profile::details::DB::create_info(id); \
         limo::profile::details::InfoUpdater limo_scope_profile_updater(limo_scope_profile_info) 
 #endif    
 
 #define limo_profile_function   limo_profile_scope(__func__)
-
 
 //------------------------------------------------------------------------------
 
@@ -172,6 +172,10 @@ namespace limo
 
         std::ostream& results(std::ostream& o)
         {   
+            #if defined(LIMO_DISABLE_PROFILER)
+                return o << "profiler disabled";
+            #endif
+
             using namespace limo::profile::details;
             using namespace std;
             using namespace std::chrono;
