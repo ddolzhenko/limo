@@ -27,6 +27,8 @@ SOFTWARE.
 //------------------------------------------------------------------------------
 
 // include local:
+#include <limo/assert.hpp>
+#include <limo/bases.hpp>
 
 // include std:
 #include <chrono>
