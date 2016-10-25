@@ -129,11 +129,11 @@ namespace limo {
     public:
         static const bool m_verbose = true;
 
+        Name  m_name;
         PrepareFunction m_before;
         PrepareFunction m_after;
 
         Statistics stats;
-        Name  m_name;
 
     public:
         LocalTestContext(Name name)
@@ -203,14 +203,6 @@ namespace limo {
 
     struct To { template <class T> To(const T&) {} };
 
-    // #define LTEST(test_name, ...) \
-    //     To doreg##test_name = \
-    //         get_ltest_context()->add(#test_name)
-    //         limo::TestSettings(#test_name,  get_ltest_context()) << \
-    //         [__VA_ARGS__](limo::TestContextGetter& get_ltest_context) mutable -> void
-
-    
-
     #define LTEST(test_name, ...) \
         limo::Registrator ltest_ ## test_name = \
             limo::TestSettings(#test_name,  get_ltest_context()) << \
@@ -222,6 +214,7 @@ namespace limo {
     // Unary
     #define EXPECT_TRUE(expr)       get_ltest_context()->stats.expect_true(__FILE__, __LINE__, #expr, expr)
     #define EXPECT_FALSE(expr)      EXPECT_TRUE(!(expr))
+    #define EXPECT(expr)            EXPECT_TRUE(expr)
 
     // Binary
     #define EXPECT_EQ(expr1, expr2) EXPECT_TRUE((expr1) == (expr2))
