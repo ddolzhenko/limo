@@ -61,6 +61,11 @@ public: // ctors
 
 public: // CacheStrategy contract interface
 
+    void clear()
+    {
+        m_order.clear();
+    }
+
     order_info promote(order_info x) 
     {
         m_order.push_front(*x);

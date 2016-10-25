@@ -108,6 +108,13 @@ public: // state
 
 public: // main interface
 
+    void clear()
+    {
+        m_cache.clear();
+        m_strategy.clear();
+        m_stat = statistics_type{};   
+    }
+
     cached_type& operator[](const key_type& key) 
     {
         limo_scope_invariant(is_valid());
