@@ -28,7 +28,7 @@
                 },  
 
                 {
-                    "name": "Build && Run",
+                    "name": "Build && Run current file",
                     "working_dir": "$file_path",
                     "cmd": [
                         "vcvars64.bat",
@@ -37,7 +37,7 @@
                         "clang++",
                         // "-Wall", 
                         "-I$project_path/..",   
-                        "-O3", // "-Ofast",
+                        "-O0", // "-Ofast",
                         "-std=c++14", 
                         "-fms-compatibility-version=19.00",
                         "-o", "$file_base_name.exe", 
@@ -59,6 +59,72 @@
                     "file_regex": "^(..*):([0-9]+):([0-9]*): (error|failed|warning).*",
                 },
 
+                {
+                    "name": "G++ Build && Run test examples",
+                    "working_dir": "$project_path/testing/basics",
+                    "cmd": [
+                        // compiler
+                        // "vcvars64.bat", "&&", "clang++", 
+                        "g++",
+                        
+                        // standard, compatibility
+                        "-std=gnu++14", 
+                        // "-std=c++14", 
+                        // "-fms-compatibility-version=19.00",
+                        
+                        // optimizations, code generations additional generations (debug, etc.)
+                        "-O2",
+                        // "-Ofast",
+                        // "-g",       // debug symbols
+                        // "-ggdb",    // gdb debug information
+
+                        // preprocessor predefinitions:
+                        // "-D NDEBUG",
+                        "-D EIGEN_DONT_ALIGN_STATICALLY",
+                        "-D LIMO_FORCE_ASSERIONS",
+                        // "-D LIMO_DISABLE_PROFILER",
+                        
+                        // warnings, errors
+                        "-Wall", "-Werror", 
+                        // "-Wpedantic", // "-Wextra", // fix macro ... error
+                        "-Wno-unused-parameter", "-Wno-unused-variable", "-Wno-unused-but-set-variable",
+
+                        // include dirs, link dirs
+                        // "-IC:\\home\\repos\\",
+                        "-I$project_path/..",   
+                        
+                        "-o", "test_examples.exe", 
+                        "test_basics.cpp",
+
+                        "&&", "test_examples.exe"],
+                    "shell": true,
+                    "file_regex": "^(..*):([0-9]+):([0-9]*): (error|failed|warning).*",
+                    // "selector": "source.c++, source.json",
+
+                },
+
+                {
+                    "name": "Build && Run test examples",
+                    "working_dir": "$project_path/testing/basics",
+                    "cmd": [
+                        "vcvars64.bat",
+                        "&&",
+                        
+                        "clang++",
+                        // "-Wall", 
+                        "-I$project_path/..",   
+                        "-O0", // "-Ofast",
+                        "-std=c++14", 
+                        "-fms-compatibility-version=19.00",
+                        "-o", "test_examples.exe", 
+                        "test_basics.cpp",
+
+                        "&&", "test_examples.exe"],
+                    "shell": true,
+                    "file_regex": "^(..*):([0-9]+):([0-9]*): (error|failed|warning).*",
+                    // "selector": "source.c++, source.json",
+
+                },
             ]
         }
     ],

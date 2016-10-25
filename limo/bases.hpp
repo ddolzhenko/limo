@@ -22,10 +22,11 @@ SOFTWARE.
 
 *******************************************************************************/
 
+#pragma once
+
 //------------------------------------------------------------------------------
 
 // include local:
-#include "limo/test.hpp"
 
 // include std:
 
@@ -36,15 +37,15 @@ SOFTWARE.
 
 namespace limo
 {
+    class noncopyable
+    {
+        noncopyable(const noncopyable&);
+        const noncopyable& operator=(const noncopyable&);
+    protected:
+        noncopyable() {}
+        ~noncopyable() {}
+    };    
 
-    
 } // namespace limo
-
-//------------------------------------------------------------------------------
-
-int main()
-{
-    return get_ltest_context()->run();
-}
 
 //------------------------------------------------------------------------------

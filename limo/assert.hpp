@@ -22,29 +22,56 @@ SOFTWARE.
 
 *******************************************************************************/
 
+#pragma once
+
 //------------------------------------------------------------------------------
 
 // include local:
-#include "limo/test.hpp"
 
 // include std:
+#include <cassert>
+#include <iostream>
 
 // forward declarations:
 
 
 //------------------------------------------------------------------------------
+// MACRO
 
-namespace limo
-{
+#if !defined(LIMO_FORCE_ASSERTIONS) && defined(NDEBUG)
+    #define limo_assert(...)    (void)(0)
+#else
+    #define limo_assert(cond, ...) \
+        limo::details::asserter(cond, #cond, "assertion", __VA_ARGS__, __FILE__, __LINE__)
+#endif
 
-    
-} // namespace limo
+#define limo_contract(cond, ...)    limo_assert(cond, __VA_ARGS__)
+#define limo_scope_invariant(cond) limo_assert(cond, "scope invariant")
 
 //------------------------------------------------------------------------------
 
-int main()
+namespace limo
 {
-    return get_ltest_context()->run();
-}
+    namespace details 
+    {
+        void asserter(
+            bool cond, 
+            const char* cond_text, 
+            const char* type,
+            const char* msg, 
+            const char* file, 
+            int line)
+        {
+            if(!cond) {
+                std::cerr 
+                    << file << ":" << line << ":: failed: " 
+                    << type << " " << cond_text 
+                    << "\n\t" << msg << std::endl;
+                assert(0);
+            }
+        }
+    }    
+
+} // namespace limo
 
 //------------------------------------------------------------------------------

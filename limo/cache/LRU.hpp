@@ -22,12 +22,14 @@ SOFTWARE.
 
 *******************************************************************************/
 
+#pragma once
+
 //------------------------------------------------------------------------------
 
 // include local:
-#include "limo/test.hpp"
 
 // include std:
+#include <list>
 
 // forward declarations:
 
@@ -37,14 +39,65 @@ SOFTWARE.
 namespace limo
 {
 
-    
-} // namespace limo
-
-//------------------------------------------------------------------------------
-
-int main()
+template <typename TKey>
+class LRU 
 {
-    return get_ltest_context()->run();
-}
+public:
+    typedef LRU<TKey>           self_type;
+    typedef std::list<TKey>     order_type;
+
+public: // contract types
+    typedef typename order_type::iterator   order_info;
+    typedef typename order_type::value_type key_type;
+    
+public: // ctors
+
+    // all default
+
+    void swap(self_type& other)
+    {
+        std::swap(m_order, other.m_order);
+    }
+
+public: // CacheStrategy contract interface
+
+    order_info promote(order_info x) 
+    {
+        m_order.push_front(*x);
+        m_order.erase(x);
+        return m_order.begin();
+    }
+
+    order_info push(const key_type& key) 
+    {
+        m_order.push_front(key);
+        return m_order.begin();
+    }
+    
+    key_type pop() 
+    {
+        limo_contract(!m_order.empty(), "push/pop call balance broken");
+
+        auto key = m_order.back();
+        m_order.pop_back();
+        return key;
+    }
+
+private: // internals
+
+    friend std::ostream& operator<<(std::ostream& o, const self_type& order) 
+    {
+        o << "[";
+        for(const auto& x : order.m_order) 
+            o << x << ", ";
+        return o << "]";
+    }
+
+private:
+    order_type m_order;
+};
+   
+
+} // namespace limo
 
 //------------------------------------------------------------------------------
