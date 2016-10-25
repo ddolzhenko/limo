@@ -153,10 +153,10 @@ private: // implementation details
             << "\telements: [";
         for(const auto& x : cache.m_cache)
         {
-            o << "(" << x.first << "," << x.second.value << "), ";
+            o << "(" << x.first << "," << x.second.first << "), ";
         }
         
-        o   << std::endl << "\tstrategy: " << cache.m_order;
+        // o   << std::endl << "\tstrategy: " << cache.m_order;
         return o;
     }
 

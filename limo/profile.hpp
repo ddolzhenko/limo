@@ -79,7 +79,9 @@ namespace limo
                 template <class TDuration>
                 typename TDuration::rep average() const 
                 { 
-                    limo_assert(calls > 0, "should never happen");
+                    // limo_assert(calls > 0, "should never happen");
+                    if (calls == 0)
+                        return 0;
                     return std::chrono::duration_cast<TDuration>(total_time/calls).count();
                 }
 
@@ -200,7 +202,6 @@ namespace limo
                     << setw(w_time)     << "-" << "-.-"
                     << setw(w_calls)    << "-" << "-.\n";
             };
-            size_t line = 0;
             br();
             o   << setfill(' ') << left << "| "
                 << setw(w_name)       << "function"   << " | "
