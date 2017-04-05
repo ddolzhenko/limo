@@ -46,15 +46,12 @@ SOFTWARE.
 
 //------------------------------------------------------------------------------
 
-namespace limo { 
+namespace limo { namespace test {
 
-
-
-    class LocalTestContext;
+    class Context;
     
-
     typedef std::string Name;
-    typedef std::function<LocalTestContext*(void)>       TestContextGetter;
+    typedef std::function<Context*(void)>       TestContextGetter;
     typedef std::function<void (TestContextGetter&)>    TestFunction;
     typedef std::function<void(void)>                   PrepareFunction;
     typedef std::map<Name, TestFunction>                Tests;
@@ -86,7 +83,7 @@ namespace limo {
         
         bool is_valid() const { return total == passed + failured + crashed; }
 
-        void add_result(Result& result) {
+        void add_result(const Result& result) {
             assert(is_valid());
 
             ++total;
@@ -125,7 +122,7 @@ namespace limo {
     };
 
 
-    class LocalTestContext {
+    class Context {
     public:
         static const bool m_verbose = true;
 
@@ -136,7 +133,7 @@ namespace limo {
         Statistics stats;
 
     public:
-        LocalTestContext(Name name)
+        Context(Name name)
         : m_name(name)
         , m_before([](){})
         , m_after([](){})
@@ -151,7 +148,7 @@ namespace limo {
 
         void run_test(Name name, TestFunction test, Name basename) {
             m_before();
-            LocalTestContext context(basename + name);
+            Context context(basename + name);
             TestContextGetter getter = [&context]() { return &context; };
             test(getter);
             stats += context.stats;
@@ -160,11 +157,11 @@ namespace limo {
     };
 
 
-    class GlobalTestContext : public LocalTestContext {
+    class GlobalContext : public Context {
     public:
         Tests m_tests;
 
-        GlobalTestContext(): LocalTestContext("root") {}
+        GlobalContext(): Context("root") {}
 
         void test(Name name, TestFunction test) {
             m_tests[name] = test;
@@ -182,35 +179,31 @@ namespace limo {
     };
 
 
-    struct TestSettings {
-        TestSettings(Name name, LocalTestContext* suite): m_name(name), m_context(suite) {}
-        
-        TestSettings& operator<<(TestFunction test) {
-            m_test = test;
-            return *this;
+    struct Create {
+        const char* name;
+        Context*    context;
+    
+        template <class TFunc> 
+        int operator+(TFunc test) {
+            context->test(name, test);
+            return 0;
         }
-
-        Name                m_name;
-        LocalTestContext*    m_context;
-        TestFunction        m_test;
     };
 
-    struct Registrator {
-        Registrator(const TestSettings& w) {
-            w.m_context->test(w.m_name, w.m_test);
-        }
+    struct Dummy {
+        template <class T> Dummy(const T&) {}
     };
 
     #define LTEST(test_name, ...) \
-        limo::Registrator ltest_ ## test_name = \
-            limo::TestSettings(#test_name,  get_ltest_context()) << \
-            [__VA_ARGS__](limo::TestContextGetter& get_ltest_context) mutable -> void
+        limo::test::Dummy ltest_ ## test_name = \
+            limo::test::Create{#test_name, limo_test_context()} + \
+            [__VA_ARGS__](limo::test::TestContextGetter& limo_test_context) mutable -> void
 
-    #define LBEFORE get_ltest_context()->m_before = [&]()
-    #define LAFTER  get_ltest_context()->m_after  = [&]()
+    #define LBEFORE limo_test_context()->m_before = [&]()
+    #define LAFTER  limo_test_context()->m_after  = [&]()
 
     // Unary
-    #define EXPECT_TRUE(expr)       get_ltest_context()->stats.expect_true(__FILE__, __LINE__, #expr, expr)
+    #define EXPECT_TRUE(expr)       limo_test_context()->stats.expect_true(__FILE__, __LINE__, #expr, expr)
     #define EXPECT_FALSE(expr)      EXPECT_TRUE(!(expr))
     #define EXPECT(expr)            EXPECT_TRUE(expr)
 
@@ -229,14 +222,14 @@ namespace limo {
     }
     ////////////////////////////////////////////////////////////////////////////////////////
 
-
+} // namespace test
 } // namespace limo
 
 //------------------------------------------------------------------------------
 // globals
 
-inline limo::GlobalTestContext* get_ltest_context() {
-    static limo::GlobalTestContext context;
+inline limo::test::GlobalContext* limo_test_context() {
+    static limo::test::GlobalContext context;
     return &context;
 }
 
