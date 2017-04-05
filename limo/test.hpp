@@ -57,10 +57,7 @@ namespace limo { namespace test {
     typedef std::map<Name, TestFunction>                Tests;
 
 
-
-
-    struct Result
-    {
+    struct Result {
         const char* expected;
         const char* recieved;
         const char* file;
@@ -122,35 +119,36 @@ namespace limo { namespace test {
     };
 
 
+    struct Test {
+        const char*     name;
+        Context*        parent;
+        TestFunction    runner;
+        int operator+=(TestFunction func); 
+    };
+
+
     class Context {
     public:
-        static const bool m_verbose = true;
-
-        Name  m_name;
+        Name            m_name;
         PrepareFunction m_before;
         PrepareFunction m_after;
-
-        Statistics stats;
-
-    public:
-        Context(Name name)
+        Statistics      stats;
+    
+        Context(Name name = "root")
         : m_name(name)
         , m_before([](){})
         , m_after([](){})
-        {
-            if(m_verbose) std::cout << m_name << std::endl;
+        {}
+
+        virtual void test(const Test& test) {
+            run_test(test, m_name+".");
         }
 
-        virtual void test(Name name, TestFunction test) 
-        {
-            run_test(name, test, m_name+".");
-        }
-
-        void run_test(Name name, TestFunction test, Name basename) {
+        void run_test(const Test& test, Name basename = "") {
             m_before();
-            Context context(basename + name);
+            Context context(basename + test.name);
             TestContextGetter getter = [&context]() { return &context; };
-            test(getter);
+            test.runner(getter);
             stats += context.stats;
             m_after();
         }
@@ -159,44 +157,38 @@ namespace limo { namespace test {
 
     class GlobalContext : public Context {
     public:
-        Tests m_tests;
-
-        GlobalContext(): Context("root") {}
-
-        void test(Name name, TestFunction test) {
-            m_tests[name] = test;
+        
+        virtual void test(const Test& test) override {
+            m_tests.push_back(test);
         }
 
         int run() {
             for(const auto& test : m_tests) {
-                run_test(test.first, test.second, "");
+                run_test(test);
             }
 
             std::cout << stats << std::endl;
             return 0;
         }
         
+    private:
+        std::vector<Test> m_tests;
     };
 
 
-    struct Create {
-        const char* name;
-        Context*    context;
-    
-        template <class TFunc> 
-        int operator+(TFunc test) {
-            context->test(name, test);
-            return 0;
-        }
-    };
-
+    int Test::operator+=(TestFunction func) { 
+        runner = func; 
+        parent->test(*this);
+        return 0;
+    }
+ 
     struct Dummy {
         template <class T> Dummy(const T&) {}
     };
 
     #define LTEST(test_name, ...) \
         limo::test::Dummy ltest_ ## test_name = \
-            limo::test::Create{#test_name, limo_test_context()} + \
+            limo::test::Test{#test_name, limo_test_context(), limo::test::TestFunction()} += \
             [__VA_ARGS__](limo::test::TestContextGetter& limo_test_context) mutable -> void
 
     #define LBEFORE limo_test_context()->m_before = [&]()
