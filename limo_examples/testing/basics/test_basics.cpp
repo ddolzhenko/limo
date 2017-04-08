@@ -83,7 +83,6 @@ SOFTWARE.
 // - test example with 2 algoritms
 
 // 0.5: 
- 
 
 
 
@@ -115,7 +114,7 @@ LTEST(lambda_mutabelnost) {
 
 LTEST(my_sqare) {
 
-    using namespace limo;
+    using namespace limo::test;
 
     EXPECT_TRUE(2==2);
     EXPECT_FALSE(2==3);
@@ -137,7 +136,7 @@ LTEST(my_sqare) {
         
     LTEST(even) {
         LTEST(positive) {
-            EXPECT_EQ(4, my_sqare(2));  
+            EXPECT_EQ(5, my_sqare(2));  
             EXPECT_EQ(16, my_sqare(4));  
         };
         LTEST(negative) {

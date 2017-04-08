@@ -48,14 +48,17 @@ SOFTWARE.
 
 namespace limo { namespace test {
 
-    class Context;
+    class   Context;
+    struct  Result;
+    struct  Statistics;
     
     typedef std::string Name;
-    typedef std::function<Context*(void)>       TestContextGetter;
-    typedef std::function<void (TestContextGetter&)>    TestFunction;
-    typedef std::function<void(void)>                   PrepareFunction;
-    typedef std::map<Name, TestFunction>                Tests;
-
+    typedef std::function<Context*(void)>           ContextGetter;
+    typedef std::function<void (ContextGetter&)>    TestFunction;
+    typedef std::function<void(void)>               PrepareFunction;
+    typedef std::function<void(const Result&)>      ResultHandler;
+    typedef std::function<void(const Statistics&)>  FinalHandler;
+    
 
     struct Result {
         const char* expected;
@@ -75,11 +78,9 @@ namespace limo { namespace test {
 
     struct Statistics {
         size_t total, passed, failured, crashed;
-
-        Statistics(): total(0), passed(0), failured(0), crashed(0) {}
         
         bool is_valid() const { return total == passed + failured + crashed; }
-
+        
         void add_result(const Result& result) {
             assert(is_valid());
 
@@ -123,34 +124,31 @@ namespace limo { namespace test {
         const char*     name;
         Context*        parent;
         TestFunction    runner;
-        int operator+=(TestFunction func); 
     };
 
 
     class Context {
     public:
-        Name            m_name;
-        PrepareFunction m_before;
-        PrepareFunction m_after;
+        Name            name;
+        PrepareFunction before, after;
         Statistics      stats;
     
-        Context(Name name = "root")
-        : m_name(name)
-        , m_before([](){})
-        , m_after([](){})
+        Context(Name name_ = "root")
+        : name(name_), before([](){}), after([](){}), stats({})
         {}
 
         virtual void test(const Test& test) {
-            run_test(test, m_name+".");
+            run_test(test, name+".");
         }
 
         void run_test(const Test& test, Name basename = "") {
-            m_before();
+            // on_test_start
+            before();
             Context context(basename + test.name);
-            TestContextGetter getter = [&context]() { return &context; };
+            ContextGetter getter = [&context]() { return &context; };
             test.runner(getter);
             stats += context.stats;
-            m_after();
+            after();
         }
     };
 
@@ -176,9 +174,9 @@ namespace limo { namespace test {
     };
 
 
-    int Test::operator+=(TestFunction func) { 
-        runner = func; 
-        parent->test(*this);
+    int operator<<(Test test, TestFunction func) { 
+        test.runner = func; 
+        test.parent->test(test);
         return 0;
     }
  
@@ -188,11 +186,11 @@ namespace limo { namespace test {
 
     #define LTEST(test_name, ...) \
         limo::test::Dummy ltest_ ## test_name = \
-            limo::test::Test{#test_name, limo_test_context(), limo::test::TestFunction()} += \
-            [__VA_ARGS__](limo::test::TestContextGetter& limo_test_context) mutable -> void
+            limo::test::Test{#test_name, limo_test_context()} << \
+            [__VA_ARGS__](limo::test::ContextGetter& limo_test_context) -> void
 
-    #define LBEFORE limo_test_context()->m_before = [&]()
-    #define LAFTER  limo_test_context()->m_after  = [&]()
+    #define LBEFORE limo_test_context()->before = [&]() -> void
+    #define LAFTER  limo_test_context()->after  = [&]() -> void
 
     // Unary
     #define EXPECT_TRUE(expr)       limo_test_context()->stats.expect_true(__FILE__, __LINE__, #expr, expr)
@@ -213,6 +211,10 @@ namespace limo { namespace test {
         return std::find(s.begin(), s.end(), x) != s.end();
     }
     ////////////////////////////////////////////////////////////////////////////////////////
+
+    // interface:
+    // void set_printer()
+
 
 } // namespace test
 } // namespace limo
