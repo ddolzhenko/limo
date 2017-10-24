@@ -201,10 +201,15 @@ namespace limo {
         }
     };
 
-    #define LTEST(test_name, ...) \
+    // First arg is a test name, second(optional) arg is a lambda capture list in parentheses
+    #define LTEST(...) LTEST_IMPL(__VA_ARGS__, (), )
+    #define LTEST_IMPL(test_name, capture, ...) \
         limo::Registrator ltest_ ## test_name = \
             limo::TestSettings(#test_name,  get_ltest_context()) << \
-            [__VA_ARGS__](limo::TestContextGetter& get_ltest_context) mutable -> void
+            [OPEN_PARENTHESES capture](limo::TestContextGetter& get_ltest_context) mutable -> void
+
+    // Preprocessor utils
+    #define OPEN_PARENTHESES(...) __VA_ARGS__
 
     #define LBEFORE get_ltest_context()->m_before = [&]()
     #define LAFTER  get_ltest_context()->m_after  = [&]()

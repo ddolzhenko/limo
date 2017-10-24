@@ -128,6 +128,25 @@ LTEST(my_sqare) {
 
     // auto my_sqare = [](int x) { return x * x; };
     
+    LTEST(capture) {
+        LTEST(by) {
+            auto true_sqare = [](int x) { return x * x; };
+            const int x = 3;
+
+            LTEST(list, (&true_sqare, x)) {
+                EXPECT_EQ(9, true_sqare(x));
+            };
+
+            LTEST(reference, (&)) {
+                EXPECT_EQ(9, true_sqare(x));
+            };
+
+            LTEST(value, (=)) {
+                EXPECT_EQ(9, true_sqare(x));
+            };
+        };
+    };
+
     LTEST(degenarated) {
         EXPECT_EQ(0, my_sqare(0));
     };
